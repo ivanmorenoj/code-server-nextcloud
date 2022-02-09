@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: code-server-configmap
+  namespace: prod
+data:
+  PUID: "1000"
+  PGID: "1000"
+  TZ: "America/Chicago"
+  PROXY_DOMAIN: "code-server.domain.com"
+  DEFAULT_WORKSPACE: "/workspace"
+  DOCKER_MODS: "linuxserver/mods:code-server-extension-arguments|ghcr.io/ivanmorenoj/lsio-mods:code-server-ws"
+  VSCODE_EXTENSION_IDS: "vscodevim.vim|streetsidesoftware.code-spell-checker|mhutchie.git-graph|ms-kubernetes-tools.vscode-kubernetes-tools|redhat.vscode-yaml"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: code-server-secret
+  namespace: prod
+data:
+  PASSWORD: <PASSWORD_BASE64_ENCODED>
+  SUDO_PASSWORD: <PASSWORD_BASE64_ENCODED>
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: code-server-dot-files
+  namespace: prod
+type: Opaque
+stringData:
+  zshrc: |
+    export PATH=$HOME/bin:/usr/local/bin:/sbin:$PATH
+    export ZSH="$HOME/.oh-my-zsh"
+    export FZF_BASE=/usr/bin/fzf
+
+    ZSH_THEME="amuse"
+    
+    plugins=(
+      git
+      fzf
+      colored-man-pages
+      ssh-agent
+      zsh-autosuggestions
+      zsh-syntax-highlighting
+      zsh-completions
+      history-substring-search
+      kubectl
+      aws
+    )
+
+    zstyle :omz:plugins:ssh-agent agent-forwarding on
+    zstyle :omz:plugins:ssh-agent identities githubkey
+    
+    source $ZSH/oh-my-zsh.sh
+
+    autoload -U compinit && compinit
+  gitconfig: |
+    [user]
+    	email = email@example.com
+    	name = Some Name
+    [init]
+    	defaultBranch = main
+    [alias]
+    lg1 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all
+    lg2 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all
+    lg = !"git lg1"
+  vscode-settings.json: |
+    {
+        "workbench.startupEditor": "none",
+        "workbench.colorTheme": "Default Dark+",
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "redhat.telemetry.enabled": false
+    }
+  sshconfig: |
+    Host somehost
+    HostName some.host.com
+    User someuser
+  awscredentials: |
+    [default]
+    aws_access_key_id = <data>
+    aws_secret_access_key = <data>
+  kubeconfig: |
+    # cluster config file
+    apiVersion: v1
+    clusters: 
+    - cluster:
+        certificate-authority-data: <data>
+        server: https://kubeconfig:6443
+      name: kubeconfig
+    contexts:
+    - context:
+        cluster: kubeconfig
+        namespace: prod
+        user: kubeconfig
+      name: kubeconfig
+    current-context: kubeconfig
+    kind: Config
+    preferences: {}
+    users:
+    - name: kubeconfig
+      user:
+        client-certificate-data: <data>
+        client-key-data: <data>
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: code-server-ssh-keys
+  namespace: prod
+type: Opaque
+stringData:
+  githubkey: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    <GITHUB_PRIVATE_KEY>
+    -----END OPENSSH PRIVATE KEY-----

@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server
+  namespace: prod
+  labels:
+    app: code-server
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: code-server
+  template:
+    metadata:
+      annotations:
+        configMapVersion: "1"
+      labels:
+        app: code-server
+    spec:
+      hostname: code-server
+      containers:
+      - name: code-server
+        imagePullPolicy: Always
+        image: docker.io/linuxserver/code-server:v4.0.2-ls111
+        envFrom:
+        - configMapRef:
+            name: code-server-configmap 
+        - secretRef:
+            name: code-server-secret
+        ports:
+        - name: svc-ui
+          containerPort: 8443
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: svc-ui
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: svc-ui
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 10
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: svc-ui
+          failureThreshold: 90
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          limits:
+            memory: "4Gi"
+            cpu: "4"
+          requests:
+            memory: "500Mi"
+            cpu: "500m"
+        volumeMounts:
+        - mountPath: /config
+          name: code-server-config
+        - mountPath: /workspace
+          name: code-server-ws
+        - mountPath: /etc/dot_files
+          name: code-dot-files
+        - mountPath: /etc/ssh_keys
+          name: code-ssh-keys
+      volumes:
+        - name: code-server-config
+          persistentVolumeClaim:
+            claimName: code-server-pvc-nfs
+        - name: code-server-ws
+          persistentVolumeClaim:
+            claimName: nc-client-pvc-nfs
+        - name: code-dot-files
+          secret:
+            secretName: code-server-dot-files
+        - name: code-ssh-keys
+          secret:
+            secretName: code-server-ssh-keys
+---
+kind: Service 
+apiVersion: v1 
+metadata:
+  name: code-server-ui-svc
+  namespace: prod
+spec:
+  selector:
+    app: code-server
+  type: ClusterIP
+  ports:
+    - name: ui-svc
+      port: 8443
+      targetPort: 8443
+      protocol: TCP

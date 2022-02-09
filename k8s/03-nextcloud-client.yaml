@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nc-client
+  namespace: prod
+  labels:
+    app: nc-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nc-client
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        configMapVersion: "1"
+      labels:
+        app: nc-client
+    spec:
+      containers:
+      - name: nc-client
+        imagePullPolicy: Always
+        image: docker.io/ivanmorenoj/nextcloud-client:c27c314
+        envFrom:
+        - configMapRef:
+            name: nc-client-configmap 
+        - secretRef:
+            name: nc-client-secret
+        resources:
+          limits:
+            memory: "250Mi"
+            cpu: "500m"
+          requests:
+            memory: "50Mi"
+            cpu: "100m"
+        volumeMounts:
+        - mountPath: /media/nextcloud
+          name: nc-client-data
+      volumes:
+        - name: nc-client-data
+          persistentVolumeClaim:
+            claimName: nc-client-pvc-nfs

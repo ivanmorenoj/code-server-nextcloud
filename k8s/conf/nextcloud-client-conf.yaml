@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nc-client-configmap
+  namespace: prod
+data:
+  NC_USER: "nextclouduser"
+  NC_URL: "https://nextcloud.domain"
+  NC_SILENT: "true"
+  NC_INTERVAL: "300"
+  NC_EXIT: "false"
+  NC_HIDDEN: "true"
+  NC_TRUST_CERT: "false"
+  TZ: "America/Chicago"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nc-client-secret
+  namespace: prod
+data:
+  NC_PASS: <NEXTCLOUD_PASS_BASE64_ENCODED>

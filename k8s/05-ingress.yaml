@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prod-ingress
+  namespace: prod
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.backend.loadbalancer.stickiness: "true"
+    traefik.ingress.kubernetes.io/redirect-entry-point: https
+    traefik.ingress.kubernetes.io/redirect-permanent: "true"
+spec:
+  tls:
+    - secretName: code-tls
+      hosts:
+        - "code-server.domain.com"
+  - host: code-server.domain.com
+    http:
+      paths:
+      - pathType: Prefix 
+        path: "/"
+        backend:
+          service:
+            name: code-server-ui-svc
+            port:
+              number: 8443
